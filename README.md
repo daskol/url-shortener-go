@@ -4,7 +4,7 @@
 
 ## Overview
 
-[*Читайте на русском здесь.*](README.ru.md)
+[*Читайте на русском здесь.*](README.md.ru)
 
 ### API Methods
 
