@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+    "sync"
 	"time"
 )
 
@@ -27,19 +28,7 @@ type Config struct {
 	UriLength    int           `toml:"uri_length"`
 }
 
-var config Config
-
 type Uri string
-
-func NewUri(length int) Uri {
-	b := make([]rune, length)
-
-	for i := range b {
-		b[i] = chars[rand.Intn(len(chars))]
-	}
-
-	return Uri("/" + string(b))
-}
 
 type Url string
 
@@ -51,20 +40,50 @@ type UrlDesc struct {
 type UrlStorage struct {
 	urls         map[Uri]UrlDesc
 	expiringTime time.Duration
+    mutex        sync.Mutex
 }
+
+var config Config
 
 var urlStorage UrlStorage
 
+func NewUri(length int) Uri {
+	b := make([]rune, length)
+
+	for i := range b {
+		b[i] = chars[rand.Intn(len(chars))]
+	}
+
+	return Uri("/" + string(b))
+}
+
 func NewUrlStorage(expiringTime time.Duration) UrlStorage {
-	return UrlStorage{
-		make(map[Uri]UrlDesc),
-		expiringTime,
+    return UrlStorage{
+        urls: make(map[Uri]UrlDesc),
+        expiringTime: expiringTime,
 	}
 }
 
-func (u *UrlStorage) Put(uri Uri, desc UrlDesc) error {
-	u.urls[uri] = desc
-	return nil
+func (u *UrlStorage) Put(url Url, exp time.Duration) Uri {
+    desc := UrlDesc{
+        url: url,
+        expiresAt: time.Now().Add(exp),
+    }
+
+    u.mutex.Lock()
+    defer u.mutex.Unlock()
+
+    for {
+        uri := NewUri(config.UriLength)
+
+        if val, ok := u.urls[uri]; !ok {
+            u.urls[uri] = desc
+            return uri
+        } else if ok && val.url == url {
+            u.urls[uri] = desc
+            return uri
+        }
+    }
 }
 
 func (u *UrlStorage) Contains(uri Uri) bool {
@@ -72,8 +91,17 @@ func (u *UrlStorage) Contains(uri Uri) bool {
 	return ok
 }
 
-func (u *UrlStorage) Get(uri Uri) UrlDesc {
-	return u.urls[uri]
+func (u *UrlStorage) Get(uri Uri) *UrlDesc {
+    desc, ok := u.urls[uri]
+
+    if !ok {
+        return nil
+    } else if ok && desc.expiresAt.Before(time.Now()) {
+        delete(u.urls, uri)
+        return nil
+    } else {
+        return &desc
+    }
 }
 
 func HandleShortRequest(w http.ResponseWriter, r *http.Request) {
@@ -85,10 +113,7 @@ func HandleShortRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	uri := NewUri(config.UriLength)
-	desc := UrlDesc{url: Url(url)}
-
-	urlStorage.Put(uri, desc)
+    uri := urlStorage.Put(Url(url), config.ExpiringTime)
 
 	location := config.HostName + string(uri) + "\n"
 
@@ -98,10 +123,12 @@ func HandleShortRequest(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandleExpandRequest(w http.ResponseWriter, r *http.Request) {
-	desc := urlStorage.Get(Uri(r.URL.Path))
-
-	w.Header().Set("Location", string(desc.url))
-	w.WriteHeader(http.StatusFound)
+	if desc := urlStorage.Get(Uri(r.URL.Path)); desc != nil {
+        w.Header().Set("Location", string(desc.url))
+        w.WriteHeader(http.StatusFound)
+    } else {
+        w.WriteHeader(http.StatusNotFound)
+    }
 }
 
 func ReadConfig(path string) Config {
