@@ -22,3 +22,12 @@ _testmain.go
 *.exe
 *.test
 *.prof
+
+# Ignore stuff for building and testing
+makefile
+
+# Ignore common directories of builds and sources
+url-shortner-go
+bin/
+pkg/
+src/github.com/
