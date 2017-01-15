@@ -96,7 +96,7 @@ func (u *UrlStorage) Get(uri Uri) *UrlDesc {
 
     if !ok {
         return nil
-    } else if ok && desc.expiresAt.Before(time.Now()) {
+    } else if ok && u.expiringTime > 0 && desc.expiresAt.Before(time.Now()) {
         delete(u.urls, uri)
         return nil
     } else {

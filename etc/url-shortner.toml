@@ -2,5 +2,5 @@ host = "localhost"  # address to listen and serve
 port = 8080  # port to listen and serve
 
 host_name = "http://localhost:8080"  # for short URL building
-expiring_time = 3600  # duration in seconds
+expiring_time = 3600  # duration in seconds, to store permanently set `-1`
 uri_length = 16  # length of URI of short URL
