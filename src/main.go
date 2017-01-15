@@ -92,6 +92,9 @@ func (u *UrlStorage) Contains(uri Uri) bool {
 }
 
 func (u *UrlStorage) Get(uri Uri) *UrlDesc {
+    u.mutex.Lock()
+    defer u.mutex.Unlock()
+
     desc, ok := u.urls[uri]
 
     if !ok {
