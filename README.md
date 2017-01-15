@@ -6,6 +6,13 @@
 
 [*Читайте на русском здесь.*](README.md.ru)
 
+URL Shortner wraps native in Go `map` data structures and makes it thread-sage. Unfortunately, the current implementation guarantee reliable storing as it is pointed the following out.
+
+1. Thread-safe for new URL shornening.
+2. Time to live and base URL are parameters.
+3. Configuration could be specified in [toml-file](etc/url-shortner.toml).
+4. No guarantees for persistence of short URLs.
+
 ### API Methods
 
 One could create new short URL with simple request to `/shorten/` URI parametrized with `url` which is target link.
