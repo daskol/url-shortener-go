@@ -4,7 +4,7 @@
 
 ## Overview
 
-[*Читайте на русском здесь.*](README.md.ru)
+[*Читайте на русском здесь.*](README.ru.md)
 
 URL Shortner wraps native in Go `map` data structures and makes it thread-sage. Unfortunately, the current implementation guarantee reliable storing as it is pointed the following out.
 
