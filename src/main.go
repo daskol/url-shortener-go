@@ -2,7 +2,7 @@ package main
 
 import (
 	"core"
-    "errors"
+	"errors"
 	"flag"
 	"github.com/BurntSushi/toml"
 	"log"
@@ -28,13 +28,13 @@ type Config struct {
 	ExpiringTime time.Duration `toml:"expiring_time"`
 	HostName     string        `toml:"host_name"`
 	UriLength    int           `toml:"uri_length"`
-    UrlStorage   string        `toml:"url_storage"`
+	UrlStorage   string        `toml:"url_storage"`
 
-    Bolt BoltStorageConfig     `toml:"bolt-storage"`
+	Bolt BoltStorageConfig `toml:"bolt-storage"`
 }
 
 type BoltStorageConfig struct {
-    Database string `toml:"database"`
+	Database string `toml:"database"`
 }
 
 var config Config
@@ -95,18 +95,18 @@ func HandleExpandRequest(w http.ResponseWriter, r *http.Request) {
 }
 
 func ReadConfig(path string) Config {
-    log.Printf("read config from %s\n", path)
+	log.Printf("read config from %s\n", path)
 
 	config := Config{
 		Host:         *host,
 		Port:         *port,
-        HostName:     *hostname,
+		HostName:     *hostname,
 		ExpiringTime: time.Duration(*ttl) * time.Second,
 		UriLength:    *uriLength,
-        UrlStorage:   *urlStorageKind,
-        Bolt:         BoltStorageConfig{
-            Database: *boltDatabase,
-        },
+		UrlStorage:   *urlStorageKind,
+		Bolt: BoltStorageConfig{
+			Database: *boltDatabase,
+		},
 	}
 
 	if len(path) == 0 {
@@ -123,26 +123,25 @@ func ReadConfig(path string) Config {
 
 	config.ExpiringTime *= time.Second
 
-    if config.ExpiringTime <= 0 {
-        log.Println("ttl of url is set to store urls forever")
-    }
+	if config.ExpiringTime <= 0 {
+		log.Println("ttl of url is set to store urls forever")
+	}
 
 	return config
 }
 
 func NewUrlStorage(config *Config) (core.UrlStorage, error) {
-    switch config.UrlStorage {
-    case "map":
-        return core.NewMapStorage(config.ExpiringTime, config.UriLength)
-    case "bolt":
-        return core.NewBoltStorage(
-            config.ExpiringTime,
-            config.UriLength,
-            config.Bolt.Database,
-        )
-    default:
-        return nil, errors.New("unknown storage " + config.UrlStorage)
-    }
+	switch config.UrlStorage {
+	case "map":
+		return core.NewMapStorage(config.ExpiringTime, config.UriLength)
+	case "bolt":
+		return core.NewBoltStorage(
+			config.ExpiringTime,
+			config.UriLength,
+			config.Bolt.Database)
+	default:
+		return nil, errors.New("unknown storage " + config.UrlStorage)
+	}
 }
 
 func main() {
@@ -151,13 +150,13 @@ func main() {
 	log.Println("    Simple URL shortner in Go")
 	log.Println("    Daniel Bershatsky <daniel.bershatsky@skolkovotech.ru>, 2017")
 
-    config = ReadConfig(*configPath)
-    storage, err := NewUrlStorage(&config)
+	config = ReadConfig(*configPath)
+	storage, err := NewUrlStorage(&config)
 
 	if err != nil {
 		log.Fatal(err)
 	} else {
-        log.Println("use storage: " + config.UrlStorage)
+		log.Println("use storage: " + config.UrlStorage)
 		urlStorage = storage
 	}
 

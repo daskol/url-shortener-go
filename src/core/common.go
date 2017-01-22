@@ -2,7 +2,7 @@ package core
 
 import (
 	"math/rand"
-    "time"
+	"time"
 )
 
 type Uri string
@@ -30,8 +30,8 @@ type UrlDesc struct {
 }
 
 type UrlStorage interface {
-    Put(url Url, exp time.Duration) Uri;
-    Get(uri Uri) (Url, bool);
+	Put(url Url, exp time.Duration) Uri
+	Get(uri Uri) (Url, bool)
 }
 
 func init() {
