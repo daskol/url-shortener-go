@@ -31,3 +31,7 @@ url-shortener-go
 bin/
 pkg/
 src/github.com/
+
+# Ignore database files
+*.db
+*.gobs

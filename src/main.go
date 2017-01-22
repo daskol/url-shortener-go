@@ -20,6 +20,13 @@ type Config struct {
 	ExpiringTime time.Duration `toml:"expiring_time"`
 	HostName     string        `toml:"host_name"`
 	UriLength    int           `toml:"uri_length"`
+    UrlStorage   string        `toml:"url_storage"`
+
+    Bolt BoltStorageConfig     `toml:"bolt-storage"`
+}
+
+type BoltStorageConfig struct {
+    Database string `toml:"database"`
 }
 
 var config Config
@@ -60,6 +67,10 @@ func ReadConfig(path string) Config {
         HostName:     "http://localhost:8080",
 		ExpiringTime: 3600 * time.Second,
 		UriLength:    8,
+        UrlStorage:   "map",
+        Bolt:        BoltStorageConfig{
+            Database: "url-storage-bolt.db",
+        },
 	}
 
 	if len(path) == 0 {
@@ -79,14 +90,29 @@ func ReadConfig(path string) Config {
 	return config
 }
 
+func NewUrlStorage(config *Config) (core.UrlStorage, error) {
+    switch config.UrlStorage {
+    case "map":
+        return core.NewMapStorage(config.ExpiringTime, config.UriLength)
+    case "bolt":
+        return core.NewBoltStorage(
+            config.ExpiringTime,
+            config.UriLength,
+            config.Bolt.Database,
+        )
+    default:
+        return nil, nil
+    }
+}
+
 func main() {
 	flag.Parse()
 
 	log.Println("    Simple URL shortner in Go")
 	log.Println("    Daniel Bershatsky <daniel.bershatsky@skolkovotech.ru>, 2017")
 
-	config = ReadConfig(*configPath)
-	storage, err := core.NewMapStorage(config.ExpiringTime, config.UriLength)
+    config = ReadConfig(*configPath)
+    storage, err := NewUrlStorage(&config)
 
 	if err != nil {
 		log.Fatal(err)
