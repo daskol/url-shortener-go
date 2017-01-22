@@ -1,8 +1,11 @@
 package core
 
 import (
+    "bytes"
+    "encoding/gob"
     "errors"
     "github.com/boltdb/bolt"
+    "log"
     "time"
 )
 
@@ -40,6 +43,10 @@ func NewBoltStorage(ttl time.Duration, length int, database string) (*BoltStorag
 
 func (b *BoltStorage) Put(url Url, exp time.Duration) Uri {
     uri := Uri("")
+    desc := UrlDesc{
+        url: url,
+        expiresAt: time.Now().Add(exp),
+    }
 
     if err := b.urls.Update(func(tx *bolt.Tx) error {
         bucket := tx.Bucket([]byte("urls"))
@@ -54,7 +61,10 @@ func (b *BoltStorage) Put(url Url, exp time.Duration) Uri {
             if bucket.Get([]byte(uri)) != nil {
                 continue
             } else {
-                return bucket.Put([]byte(uri), []byte(url))
+                var buffer bytes.Buffer
+                encoder := gob.NewEncoder(&buffer)
+                encoder.Encode(&desc)
+                return bucket.Put([]byte(uri), buffer.Bytes())
             }
         }
     }); err != nil {
@@ -69,16 +79,37 @@ func (b *BoltStorage) Contains(uri Uri) bool {
 }
 
 func (b *BoltStorage) Get(uri Uri) (Url, bool) {
-    url := Url("")
-    err := b.urls.View(func(tx *bolt.Tx) error {
+    var desc UrlDesc
+
+    if err := b.urls.View(func(tx *bolt.Tx) error {
         if bucket := tx.Bucket([]byte("urls")); bucket == nil {
             return errors.New("no bucket `urls`")
         } else if value := bucket.Get([]byte(uri)); value != nil {
-            url = Url(value)
+            var buffer bytes.Buffer
+            decoder := gob.NewDecoder(&buffer)
+            decoder.Decode(&desc)
             return nil
         } else {
             return errors.New("key not in bucket")
         }
-    })
-    return url, err == nil
+    }); err != nil {
+        log.Println(err)
+        return Url(""), false
+    }
+
+    if b.expiringTime <= 0 || desc.expiresAt.After(time.Now()) {
+        return desc.url, true
+    }
+
+    if err := b.urls.Update(func(tx *bolt.Tx) error {
+        if bucket := tx.Bucket([]byte("urls")); bucket == nil {
+            return errors.New("no bucket `urls`")
+        } else {
+            return bucket.Delete([]byte(uri))
+        }
+    }); err != nil {
+        log.Println(err)
+    }
+
+    return desc.url, false
 }
