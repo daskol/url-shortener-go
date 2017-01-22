@@ -25,8 +25,8 @@ func NewUri(length int) Uri {
 type Url string
 
 type UrlDesc struct {
-	url       Url
-	expiresAt time.Time
+	Url       Url
+	ExpiresAt time.Time
 }
 
 type UrlStorage interface {

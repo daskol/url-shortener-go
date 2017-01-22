@@ -44,8 +44,8 @@ func NewBoltStorage(ttl time.Duration, length int, database string) (*BoltStorag
 func (b *BoltStorage) Put(url Url, exp time.Duration) Uri {
     uri := Uri("")
     desc := UrlDesc{
-        url: url,
-        expiresAt: time.Now().Add(exp),
+        Url: url,
+        ExpiresAt: time.Now().Add(exp),
     }
 
     if err := b.urls.Update(func(tx *bolt.Tx) error {
@@ -63,7 +63,7 @@ func (b *BoltStorage) Put(url Url, exp time.Duration) Uri {
             } else {
                 var buffer bytes.Buffer
                 encoder := gob.NewEncoder(&buffer)
-                encoder.Encode(&desc)
+                encoder.Encode(desc)
                 return bucket.Put([]byte(uri), buffer.Bytes())
             }
         }
@@ -85,20 +85,19 @@ func (b *BoltStorage) Get(uri Uri) (Url, bool) {
         if bucket := tx.Bucket([]byte("urls")); bucket == nil {
             return errors.New("no bucket `urls`")
         } else if value := bucket.Get([]byte(uri)); value != nil {
-            var buffer bytes.Buffer
-            decoder := gob.NewDecoder(&buffer)
+            buffer := bytes.NewBuffer(value)
+            decoder := gob.NewDecoder(buffer)
             decoder.Decode(&desc)
             return nil
         } else {
-            return errors.New("key not in bucket")
+            return errors.New("key not in bucket: " + string(uri))
         }
     }); err != nil {
-        log.Println(err)
         return Url(""), false
     }
 
-    if b.expiringTime <= 0 || desc.expiresAt.After(time.Now()) {
-        return desc.url, true
+    if b.expiringTime <= 0 || desc.ExpiresAt.After(time.Now()) {
+        return Url(desc.Url), true
     }
 
     if err := b.urls.Update(func(tx *bolt.Tx) error {
@@ -111,5 +110,5 @@ func (b *BoltStorage) Get(uri Uri) (Url, bool) {
         log.Println(err)
     }
 
-    return desc.url, false
+    return Url(desc.Url), false
 }

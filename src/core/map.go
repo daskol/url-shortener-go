@@ -22,8 +22,8 @@ func NewMapStorage(ttl time.Duration, length int) (*MapStorage, error) {
 
 func (u *MapStorage) Put(url Url, exp time.Duration) Uri {
     desc := UrlDesc{
-        url: url,
-        expiresAt: time.Now().Add(exp),
+        Url: url,
+        ExpiresAt: time.Now().Add(exp),
     }
 
     u.mutex.Lock()
@@ -35,7 +35,7 @@ func (u *MapStorage) Put(url Url, exp time.Duration) Uri {
         if val, ok := u.urls[uri]; !ok {
             u.urls[uri] = desc
             return uri
-        } else if ok && val.url == url {
+        } else if ok && val.Url == url {
             u.urls[uri] = desc
             return uri
         }
@@ -55,10 +55,10 @@ func (u *MapStorage) Get(uri Uri) (Url, bool) {
 
     if !ok {
         return Url(""), false
-    } else if ok && u.expiringTime > 0 && desc.expiresAt.Before(time.Now()) {
+    } else if ok && u.expiringTime > 0 && desc.ExpiresAt.Before(time.Now()) {
         delete(u.urls, uri)
-        return desc.url, false
+        return desc.Url, false
     } else {
-        return desc.url, true
+        return desc.Url, true
     }
 }
