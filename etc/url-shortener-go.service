@@ -1,0 +1,14 @@
+[Unit]
+Description=Simple URL shortener in Go
+After=network.target
+
+[Service]
+Type=simple
+PIDFile=/var/run/url-shortener-go.pid
+ExecStart=/usr/bin/url-shortener-go --url-storage bolt --bolt-db /var/lib/url-shortener-go/bolt.db
+User=http
+Group=http
+WorkingDirectory=/var/lib/url-shortener-go
+
+[Install]
+WantedBy=multi-user.target
