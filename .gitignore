@@ -27,7 +27,7 @@ _testmain.go
 makefile
 
 # Ignore common directories of builds and sources
-url-shortner-go
+url-shortener-go
 bin/
 pkg/
 src/github.com/
