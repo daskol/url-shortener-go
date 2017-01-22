@@ -41,7 +41,34 @@ var config Config
 
 var urlStorage core.UrlStorage
 
+func extractHostname(r *http.Request) string {
+	var hostname string
+
+	if schema, ok := r.Header["X-Forwarded-Proto"]; ok {
+		hostname = schema[0]
+	} else {
+		hostname = "http"
+	}
+
+	hostname += "://"
+
+	if forwarded_host, ok := r.Header["X-Forwarded-Host"]; ok {
+		hostname += forwarded_host[0]
+	} else if len(r.Host) > 0 {
+		hostname += r.Host
+	} else {
+		hostname += config.HostName
+	}
+
+	return hostname
+}
+
 func HandleShortRequest(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
 	url := r.FormValue("url")
 
 	if len(url) == 0 {
@@ -51,12 +78,11 @@ func HandleShortRequest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	uri := urlStorage.Put(core.Url(url), config.ExpiringTime)
-
-	location := config.HostName + string(uri) + "\n"
+	hostname := extractHostname(r)
+	location := hostname + string(uri)
 
 	w.Header().Set("Location", location)
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(location))
 }
 
 func HandleExpandRequest(w http.ResponseWriter, r *http.Request) {
