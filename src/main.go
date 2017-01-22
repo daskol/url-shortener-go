@@ -2,6 +2,7 @@ package main
 
 import (
 	"core"
+    "errors"
 	"flag"
 	"github.com/BurntSushi/toml"
 	"log"
@@ -61,6 +62,8 @@ func HandleExpandRequest(w http.ResponseWriter, r *http.Request) {
 }
 
 func ReadConfig(path string) Config {
+    log.Printf("read config from %s\n", path)
+
 	config := Config{
 		Host:         "localhost",
 		Port:         8080,
@@ -87,6 +90,10 @@ func ReadConfig(path string) Config {
 
 	config.ExpiringTime *= time.Second
 
+    if config.ExpiringTime <= 0 {
+        log.Println("ttl of url is set to store urls forever")
+    }
+
 	return config
 }
 
@@ -101,7 +108,7 @@ func NewUrlStorage(config *Config) (core.UrlStorage, error) {
             config.Bolt.Database,
         )
     default:
-        return nil, nil
+        return nil, errors.New("unknown storage " + config.UrlStorage)
     }
 }
 
@@ -117,6 +124,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	} else {
+        log.Println("use storage: " + config.UrlStorage)
 		urlStorage = storage
 	}
 
