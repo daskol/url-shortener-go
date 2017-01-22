@@ -13,6 +13,13 @@ import (
 )
 
 var configPath = flag.String("config", "", "Path to *.toml config.")
+var urlStorageKind = flag.String("url-storage", "map", "Set how to store URLs.")
+var uriLength = flag.Int("uri-length", 8, "Length of randomly generated URI.")
+var ttl = flag.Int64("ttl", 3600, "URI's time to live.")
+var host = flag.String("host", "localhost", "Address to listen.")
+var port = flag.Int("port", 8080, "Port to listen.")
+var hostname = flag.String("hostname", "", "Force host name definition for URL building.")
+var boltDatabase = flag.String("bolt-db", "url-storage-bolt.db", "Path to Bolt DB database file.")
 
 type Config struct {
 	Host string
@@ -65,14 +72,14 @@ func ReadConfig(path string) Config {
     log.Printf("read config from %s\n", path)
 
 	config := Config{
-		Host:         "localhost",
-		Port:         8080,
-        HostName:     "http://localhost:8080",
-		ExpiringTime: 3600 * time.Second,
-		UriLength:    8,
-        UrlStorage:   "map",
-        Bolt:        BoltStorageConfig{
-            Database: "url-storage-bolt.db",
+		Host:         *host,
+		Port:         *port,
+        HostName:     *hostname,
+		ExpiringTime: time.Duration(*ttl) * time.Second,
+		UriLength:    *uriLength,
+        UrlStorage:   *urlStorageKind,
+        Bolt:         BoltStorageConfig{
+            Database: *boltDatabase,
         },
 	}
 
