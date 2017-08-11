@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"flag"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
@@ -41,6 +42,9 @@ type BoltStorageConfig struct {
 var config Config
 
 var urlStorage core.UrlStorage
+
+var tplIndexFiles = []string{"templates/index.html"}
+var tplIndex = template.Must(template.ParseFiles(tplIndexFiles...))
 
 func extractHostname(r *http.Request) string {
 	var hostname string
@@ -101,8 +105,12 @@ func HandleExpandRequest(w http.ResponseWriter, r *http.Request) {
 	if url, ok := urlStorage.Get(core.Uri(r.URL.Path)); ok {
 		w.Header().Set("Location", string(url))
 		w.WriteHeader(http.StatusFound)
+	} else if r.URL.Path == "/" {
+		if err := tplIndex.Execute(w, nil); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 	} else {
-		w.WriteHeader(http.StatusNotFound)
+		http.Error(w, "", http.StatusNotFound)
 	}
 }
 
