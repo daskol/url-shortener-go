@@ -1,15 +1,16 @@
 package main
 
 import (
-	"core"
 	"errors"
 	"flag"
-	"github.com/BurntSushi/toml"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/BurntSushi/toml"
+	"github.com/daskol/url-shortener-go/core"
 )
 
 var configPath = flag.String("config", "", "Path to *.toml config.")
