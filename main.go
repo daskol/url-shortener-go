@@ -65,25 +65,36 @@ func extractHostname(r *http.Request) string {
 }
 
 func HandleShortRequest(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
+	shorten := func() (string, bool) {
+		url := r.FormValue("url")
+
+		if len(url) == 0 {
+			http.Error(w, "No url to shorten.", http.StatusBadRequest)
+			return "", false
+		}
+
+		uri := urlStorage.Put(core.Url(url), config.ExpiringTime)
+		hostname := extractHostname(r)
+		location := hostname + string(uri)
+
+		return location, true
 	}
 
-	url := r.FormValue("url")
-
-	if len(url) == 0 {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("No url to shorten."))
-		return
+	switch r.Method {
+	case "POST":
+		if location, ok := shorten(); ok {
+			w.Header().Set("Location", location)
+			w.WriteHeader(http.StatusCreated)
+		}
+	case "GET":
+		if location, ok := shorten(); ok {
+			w.WriteHeader(http.StatusCreated)
+			w.Write([]byte(location))
+		}
+	default:
+		http.Error(w, "", http.StatusMethodNotAllowed)
 	}
 
-	uri := urlStorage.Put(core.Url(url), config.ExpiringTime)
-	hostname := extractHostname(r)
-	location := hostname + string(uri)
-
-	w.Header().Set("Location", location)
-	w.WriteHeader(http.StatusCreated)
 }
 
 func HandleExpandRequest(w http.ResponseWriter, r *http.Request) {
